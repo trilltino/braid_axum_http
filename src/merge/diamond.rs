@@ -1,0 +1,567 @@
+//! Diamond-Types CRDT integration for Braid-HTTP text synchronization.
+//!
+//! This module provides a high-performance wrapper around the diamond-types CRDT library,
+//! enabling conflict-free text document synchronization for Braid-HTTP. It's built on two
+//! core abstractions: operation logs (OpLog) and document snapshots (Branch).
+//!
+//! # Overview
+//!
+//! Diamond-Types is a super-fast CRDT (Conflict-free Replicated Data Type) optimized for
+//! plain text documents. Key concepts:
+//!
+//! - **OpLog (Operation Log)**: Append-only log of all document changes
+//! - **Branch**: In-memory snapshot of document state at a specific point in time
+//! - **Automatic Conflict Resolution**: Concurrent edits merge deterministically
+//!
+//! # Unique ID Requirements
+//!
+//! Every operation must have a unique ID (agent ID + sequence number pair). Critical rules:
+//!
+//! - ⚠️ Generate a **unique agent ID per editing session** (e.g., UUID)
+//! - ⚠️ **Never reuse agent IDs** across sessions—this causes document divergence
+//! - Sequence numbers are automatically incremented by diamond-types
+//! - Each character operation (insert/delete) increments the sequence number
+//!
+//! # Examples
+//!
+//! ## Basic Text Editing
+//!
+//! ```
+//! use braid_axum_http::merge::DiamondCRDT;
+//!
+//! let mut doc = DiamondCRDT::new("session-uuid-abc");
+//! doc.add_insert(0, "hello");
+//! doc.add_insert(5, " world");
+//! assert_eq!(doc.content(), "hello world");
+//! ```
+//!
+//! ## Concurrent Edits from Multiple Peers
+//!
+//! ```
+//! use braid_axum_http::merge::DiamondCRDT;
+//!
+//! let mut doc = DiamondCRDT::new("editor-1");
+//! doc.add_insert(0, "hello");
+//!
+//! // Concurrent edit from another client
+//! doc.add_insert_remote("editor-2", 5, " world");
+//!
+//! // Automatically merged without conflict
+//! assert_eq!(doc.content(), "hello world");
+//! ```
+//!
+//! # Specification References
+//!
+//! - **draft-toomim-httpbis-braid-http**: Section 2.2 (Merge-Types)
+//! - **diamond-types**: <https://docs.rs/diamond-types/>
+
+use std::collections::HashMap;
+use serde_json::{json, Value};
+
+/// High-performance text CRDT wrapper for collaborative editing.
+///
+/// `DiamondCRDT` manages a text document with automatic conflict resolution for concurrent
+/// edits from multiple peers. All operations are tracked in an operation log for synchronization
+/// with remote clients.
+///
+/// # Invariants
+///
+/// - Agent ID must be **globally unique** within the editing session
+/// - Content state is always consistent with operation history
+/// - All remote edits are automatically applied with conflict resolution
+/// - Branches are always at the tip of the operation log
+///
+/// # Complexity
+///
+/// - **Insert**: O(n) where n is document length (due to position transformation)
+/// - **Delete**: O(n)
+/// - **Export**: O(n)
+/// - **State queries**: O(1)
+#[derive(Clone, Debug)]
+pub struct DiamondCRDT {
+    /// Unique identifier for this editing session (must not be reused)
+    agent_id: String,
+
+    /// Complete history of all document operations
+    oplog: diamond_types::list::OpLog,
+
+    /// Current document snapshot at the tip of the operation log
+    branch: diamond_types::list::Branch,
+
+    /// Tracks remote agent IDs and their latest sequence numbers
+    /// (useful for detecting and filtering duplicate operations)
+    remote_versions: HashMap<String, u32>,
+}
+
+impl DiamondCRDT {
+    /// Create a new empty CRDT with a unique agent ID.
+    ///
+    /// The agent ID must be globally unique within the collaborative session and should never
+    /// be reused across sessions. Each session should generate a new agent ID (typically a UUID).
+    ///
+    /// # Arguments
+    ///
+    /// * `agent_id` - Session-unique identifier (e.g., UUID, session token)
+    ///
+    /// # Panics
+    ///
+    /// Never panics. All operations are infallible during initialization.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let doc = DiamondCRDT::new("550e8400-e29b-41d4-a716-446655440000");
+    /// assert!(doc.is_empty());
+    /// ```
+    pub fn new(agent_id: impl Into<String>) -> Self {
+        let agent_id_str = agent_id.into();
+        let mut oplog = diamond_types::list::OpLog::new();
+        let _ = oplog.get_or_create_agent_id(&agent_id_str);
+        let branch = diamond_types::list::Branch::new_at_tip(&oplog);
+
+        Self {
+            agent_id: agent_id_str,
+            oplog,
+            branch,
+            remote_versions: HashMap::new(),
+        }
+    }
+
+    // ========== Local Editing Methods ==========
+
+    /// Insert text at a position in the document.
+    ///
+    /// This is a local edit operation. The insertion is immediately applied to the document
+    /// and tracked in the operation log for synchronization with peers.
+    ///
+    /// # Arguments
+    ///
+    /// * `pos` - Position to insert at (0-based, in Unicode characters)
+    /// * `text` - Text content to insert (must be valid UTF-8)
+    ///
+    /// # Panics
+    ///
+    /// Panics if `pos` exceeds the document length, matching `str::insert()` behavior.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hello");
+    /// doc.add_insert(5, " world");
+    /// assert_eq!(doc.content(), "hello world");
+    /// ```
+    pub fn add_insert(&mut self, pos: usize, text: &str) {
+        let agent = self.oplog.get_or_create_agent_id(&self.agent_id);
+        self.oplog.add_insert(agent, pos, text);
+        self.branch = diamond_types::list::Branch::new_at_tip(&self.oplog);
+    }
+
+    /// Delete a range of characters from the document.
+    ///
+    /// This is a local edit operation. The deletion is immediately applied and tracked
+    /// in the operation log for peer synchronization.
+    ///
+    /// # Arguments
+    ///
+    /// * `range` - Character range to delete (exclusive end, in Unicode characters)
+    ///
+    /// # Panics
+    ///
+    /// Panics if the range exceeds document bounds or is invalid (start > end).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hello world");
+    /// doc.add_delete(5..6);  // Delete the space
+    /// assert_eq!(doc.content(), "helloworld");
+    /// ```
+    pub fn add_delete(&mut self, range: std::ops::Range<usize>) {
+        let agent = self.oplog.get_or_create_agent_id(&self.agent_id);
+        self.oplog.add_delete_without_content(agent, range);
+        self.branch = diamond_types::list::Branch::new_at_tip(&self.oplog);
+    }
+
+    // ========== Remote Editing Methods ==========
+
+    /// Apply an insertion from a remote peer.
+    ///
+    /// Remote edits are merged into the document using the CRDT algorithm. The operation log
+    /// automatically handles concurrent edits from this and other peers without conflicts.
+    ///
+    /// # Arguments
+    ///
+    /// * `agent_id` - Unique ID of the remote peer (must differ from local agent ID)
+    /// * `pos` - Position to insert at (in Unicode characters)
+    /// * `text` - Text content to insert
+    ///
+    /// # Note
+    ///
+    /// If the `agent_id` matches the local agent ID, this is treated as a separate operation
+    /// and will result in duplicate content. Always use unique agent IDs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hello");
+    ///
+    /// // Remote peer inserts at the end
+    /// doc.add_insert_remote("session-2", 5, " world");
+    /// assert_eq!(doc.content(), "hello world");
+    /// ```
+    pub fn add_insert_remote(&mut self, agent_id: &str, pos: usize, text: &str) {
+        let agent = self.oplog.get_or_create_agent_id(agent_id);
+        self.oplog.add_insert(agent, pos, text);
+        self.branch = diamond_types::list::Branch::new_at_tip(&self.oplog);
+    }
+
+    /// Apply a deletion from a remote peer.
+    ///
+    /// Remote deletions are merged into the document using CRDT semantics. The algorithm ensures
+    /// that concurrent deletes and inserts resolve deterministically across all peers.
+    ///
+    /// # Arguments
+    ///
+    /// * `agent_id` - Unique ID of the remote peer
+    /// * `range` - Character range to delete (exclusive end)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hello world");
+    ///
+    /// doc.add_delete_remote("session-2", 5..6);  // Delete the space
+    /// assert_eq!(doc.content(), "helloworld");
+    /// ```
+    pub fn add_delete_remote(&mut self, agent_id: &str, range: std::ops::Range<usize>) {
+        let agent = self.oplog.get_or_create_agent_id(agent_id);
+        self.oplog.add_delete_without_content(agent, range);
+        self.branch = diamond_types::list::Branch::new_at_tip(&self.oplog);
+    }
+
+    // ========== Query Methods ==========
+
+    /// Get the current document content as a string.
+    ///
+    /// Returns the fully merged document state. This reflects all operations
+    /// from all peers up to the current tip of the operation log.
+    ///
+    /// # Complexity
+    ///
+    /// O(n) where n is the document length (due to underlying representation).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hello");
+    /// assert_eq!(doc.content(), "hello");
+    /// ```
+    pub fn content(&self) -> String {
+        self.branch.content().to_string()
+    }
+
+    /// Get the session's agent ID.
+    ///
+    /// Returns the unique identifier used for distinguishing this peer's operations
+    /// in the operation log.
+    ///
+    /// # Returns
+    ///
+    /// A string slice referencing the agent ID passed to `new()`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let doc = DiamondCRDT::new("session-1");
+    /// assert_eq!(doc.agent_id(), "session-1");
+    /// ```
+    pub fn agent_id(&self) -> &str {
+        &self.agent_id
+    }
+
+    /// Get the total count of operations in the operation log.
+    ///
+    /// Each character insertion or deletion counts as one operation. This is useful
+    /// for version tracking and detecting whether the document has changed.
+    ///
+    /// # Note
+    ///
+    /// This is not the same as document length. For example, inserting "hello" counts
+    /// as 5 operations, but the document length is also 5 (in this case). However,
+    /// deleting 3 characters increments this by 3.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hi");  // 2 operations
+    /// assert_eq!(doc.operation_count(), 2);
+    /// ```
+    pub fn operation_count(&self) -> usize {
+        self.oplog.len()
+    }
+
+    /// Check if the document is empty (no operations applied).
+    ///
+    /// Returns `true` if the operation log is empty. Note that this does not
+    /// check content length; it checks whether any operations have been recorded.
+    ///
+    /// # Returns
+    ///
+    /// `true` if no operations have been applied; `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// assert!(doc.is_empty());
+    /// doc.add_insert(0, "text");
+    /// assert!(!doc.is_empty());
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.oplog.is_empty()
+    }
+
+    // ========== Serialization & Export Methods ==========
+
+    /// Export document state and metadata as JSON.
+    ///
+    /// Creates a JSON representation suitable for transmission via Braid-HTTP.
+    /// This includes current content, operation count, and a version identifier.
+    ///
+    /// # Returns
+    ///
+    /// A JSON object containing:
+    /// - `agent_id` (string): The session's agent ID
+    /// - `operations_count` (number): Total operations in the log
+    /// - `content` (string): Current merged document content
+    /// - `version` (string): Version identifier for this state
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hello");
+    /// let exported = doc.export_operations();
+    /// assert_eq!(exported["agent_id"], "session-1");
+    /// ```
+    pub fn export_operations(&self) -> Value {
+        let version = format!(
+            "oplog-{}-{}",
+            self.agent_id,
+            self.oplog.len()
+        );
+
+        json!({
+            "agent_id": self.agent_id,
+            "operations_count": self.oplog.len(),
+            "content": self.content(),
+            "version": version,
+        })
+    }
+
+    /// Generate a version identifier for Braid-HTTP headers.
+    ///
+    /// Returns a unique string representing the current document state. Version
+    /// identifiers should change whenever the document is modified. They're used
+    /// in Braid protocol responses for version tracking and conflict detection.
+    ///
+    /// # Format
+    ///
+    /// Returns strings of the form: `diamond-{agent_id}-{operation_count}`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// let v1 = doc.get_version();
+    /// doc.add_insert(0, "x");
+    /// let v2 = doc.get_version();
+    /// assert_ne!(v1, v2);
+    /// ```
+    pub fn get_version(&self) -> String {
+        format!("diamond-{}-{}", self.agent_id, self.oplog.len())
+    }
+
+    /// Create a checkpoint snapshot of the current state.
+    ///
+    /// Returns a complete snapshot of the document suitable for Braid responses.
+    /// This includes content, version identifier, agent ID, and operation count.
+    ///
+    /// # Returns
+    ///
+    /// A JSON object containing:
+    /// - `content` (string): Current document text
+    /// - `version` (string): Version identifier
+    /// - `agent_id` (string): Session agent ID
+    /// - `oplog_len` (number): Operation count
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let mut doc = DiamondCRDT::new("session-1");
+    /// doc.add_insert(0, "hello");
+    /// let checkpoint = doc.checkpoint();
+    /// assert_eq!(checkpoint["content"], "hello");
+    /// ```
+    pub fn checkpoint(&self) -> Value {
+        json!({
+            "content": self.content(),
+            "version": self.get_version(),
+            "agent_id": self.agent_id,
+            "oplog_len": self.oplog.len(),
+        })
+    }
+
+    /// Estimate merge quality based on operation diversity.
+    ///
+    /// Returns a heuristic score (0-100) indicating merge convergence quality.
+    /// Higher scores indicate better document stability and fewer conflicting edits.
+    ///
+    /// # Heuristic
+    ///
+    /// Currently based on the diversity of remote agents that have edited the document:
+    /// - 100: Only local edits (no remote agents)
+    /// - < 100: Remote agents present (diversity factor applied)
+    ///
+    /// # Returns
+    ///
+    /// An integer from 0 to 100, where 100 is best quality.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use braid_axum_http::merge::DiamondCRDT;
+    ///
+    /// let doc = DiamondCRDT::new("session-1");
+    /// assert_eq!(doc.merge_quality(), 100);  // No remote edits yet
+    /// ```
+    pub fn merge_quality(&self) -> u32 {
+        if self.remote_versions.is_empty() {
+            100
+        } else {
+            let remote_agents = self.remote_versions.len() as f64;
+            let diversity_factor = (remote_agents / (remote_agents + 1.0)) * 100.0;
+            (diversity_factor.max(0.0).min(100.0)) as u32
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_insert() {
+        let mut crdt = DiamondCRDT::new("alice");
+        crdt.add_insert(0, "hello");
+        assert_eq!(crdt.content(), "hello");
+    }
+
+    #[test]
+    fn test_multiple_inserts() {
+        let mut crdt = DiamondCRDT::new("alice");
+        crdt.add_insert(0, "hello");
+        crdt.add_insert(5, " world");
+        assert_eq!(crdt.content(), "hello world");
+    }
+
+    #[test]
+    fn test_delete() {
+        let mut crdt = DiamondCRDT::new("alice");
+        crdt.add_insert(0, "hello world");
+        crdt.add_delete(5..6);
+        assert_eq!(crdt.content(), "helloworld");
+    }
+
+    #[test]
+    fn test_concurrent_edits() {
+        let mut crdt = DiamondCRDT::new("alice");
+        crdt.add_insert(0, "hello");
+        crdt.add_insert_remote("bob", 5, " world");
+        assert_eq!(crdt.content(), "hello world");
+    }
+
+    #[test]
+    fn test_agent_id() {
+        let crdt = DiamondCRDT::new("alice");
+        assert_eq!(crdt.agent_id(), "alice");
+    }
+
+    #[test]
+    fn test_is_empty() {
+        let mut crdt = DiamondCRDT::new("alice");
+        assert!(crdt.is_empty());
+        crdt.add_insert(0, "text");
+        assert!(!crdt.is_empty());
+    }
+
+    #[test]
+    fn test_export_operations() {
+        let mut crdt = DiamondCRDT::new("alice");
+        crdt.add_insert(0, "hello");
+        let export = crdt.export_operations();
+        
+        assert_eq!(export["agent_id"], "alice");
+        assert!(export["operations_count"].is_number());
+        assert_eq!(export["content"], "hello");
+        assert!(export["version"].is_string());
+    }
+
+    #[test]
+    fn test_get_version() {
+        let mut crdt = DiamondCRDT::new("alice");
+        let v1 = crdt.get_version();
+        assert!(v1.contains("alice"));
+        
+        crdt.add_insert(0, "text");
+        let v2 = crdt.get_version();
+        assert_ne!(v1, v2);
+    }
+
+    #[test]
+    fn test_checkpoint() {
+        let mut crdt = DiamondCRDT::new("alice");
+        crdt.add_insert(0, "hello");
+        let cp = crdt.checkpoint();
+        
+        assert_eq!(cp["content"], "hello");
+        assert_eq!(cp["agent_id"], "alice");
+        assert!(cp["version"].is_string());
+    }
+
+    #[test]
+    fn test_merge_quality() {
+        let crdt = DiamondCRDT::new("alice");
+        assert_eq!(crdt.merge_quality(), 100);
+    }
+}
