@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="EMPTY_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/axum-core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/axum-extra/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/axum-macros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/axum-macros/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/axum/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/axum/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/axum/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/anyhow-error-response/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/auto-reload/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/chat/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/compression/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/consume-body-in-extractor-or-middleware/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/cors/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/customize-extractor-error/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/customize-path-rejection/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/dependency-injection/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/diesel-async-postgres/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/diesel-postgres/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/error-handling/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/form/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/global-404-handler/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/graceful-shutdown/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/handle-head-request/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/hello-world/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/http-proxy/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/jwt/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/key-value-store/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/low-level-native-tls/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/low-level-openssl/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/low-level-rustls/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/mongodb/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/multipart-form/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/oauth/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/parse-body-based-on-content-type/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/print-request-response/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/prometheus-metrics/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/query-params-with-empty-strings/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/readme/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/request-id/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/reqwest-response/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/reverse-proxy/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/routes-and-handlers-close-together/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/serve-with-hyper/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/simple-router-wasm/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/sqlx-postgres/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/sse/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/static-file-server/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/stream-to-file/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/templates-minijinja/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/templates/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/testing-websockets/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/testing/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/tls-graceful-shutdown/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/tls-rustls/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/todos/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/tokio-postgres/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/tokio-redis/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/tracing-aka-logging/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/unix-domain-socket/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/validator/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/versioning/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/websockets-http2/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/axum/examples/websockets/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/bench/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/crdt-testdata/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/dt-cli/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/dt-swift/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/dt-wasm/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/dt-wasm/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/rle/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/crates/trace-alloc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reference/diamond_types/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/reference/axum/target" />
+      <excludeFolder url="file://$MODULE_DIR$/reference/diamond_types/target" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

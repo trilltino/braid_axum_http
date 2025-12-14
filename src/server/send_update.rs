@@ -35,8 +35,10 @@ use axum::{
     body::Body,
     http::{StatusCode, HeaderValue, header},
 };
+use crate::protocol::constants::headers;
 use bytes::Bytes;
 use std::collections::BTreeMap;
+use futures::{Stream, StreamExt};
 
 /// Extension trait for Axum responses to send Braid updates.
 ///
@@ -99,14 +101,14 @@ impl UpdateResponse {
     /// Specifies the version ID(s) of this update (Section 2).
     pub fn with_version(mut self, versions: Vec<Version>) -> Self {
         let version_str = protocol::format_version_header(&versions);
-        self.headers.insert("Version".to_string(), version_str);
+        self.headers.insert(headers::VERSION.as_str().to_string(), version_str);
         self
     }
 
     /// Set parents header
     pub fn with_parents(mut self, parents: Vec<Version>) -> Self {
         let parents_str = protocol::format_version_header(&parents);
-        self.headers.insert("Parents".to_string(), parents_str);
+        self.headers.insert(headers::PARENTS.as_str().to_string(), parents_str);
         self
     }
 
@@ -173,7 +175,7 @@ impl IntoResponse for Update {
         } else if let Some(patches) = &self.patches {
             let patches_str = patches.len().to_string();
             response_builder = response_builder.with_header(
-                "Patches".to_string(),
+                headers::PATCHES.as_str().to_string(),
                 patches_str,
             );
 
@@ -181,7 +183,7 @@ impl IntoResponse for Update {
                 let first_patch = &patches[0];
                 let content_range = format!("{} {}", first_patch.unit, first_patch.range);
                 response_builder = response_builder.with_header(
-                    "Content-Range".to_string(),
+                    headers::CONTENT_RANGE.as_str().to_string(),
                     content_range,
                 );
                 response_builder = response_builder.with_body(first_patch.content.clone());
@@ -212,6 +214,67 @@ pub mod status {
     #[allow(dead_code)]
     pub fn multiplex_response() -> StatusCode {
         StatusCode::from_u16(RESPONDED_VIA_MULTIPLEX).unwrap()
+    }
+}
+
+/// Builder for subscription responses.
+///
+/// Creates a streaming response with HTTP 209 status code.
+pub struct SubscriptionResponse<S> {
+    stream: S,
+    headers: BTreeMap<String, String>,
+}
+
+impl<S> SubscriptionResponse<S>
+where
+    S: Stream<Item = Result<Update>> + Send + 'static,
+{
+    /// Create a new subscription response from a stream of updates.
+    pub fn new(stream: S) -> Self {
+        SubscriptionResponse {
+            stream,
+            headers: BTreeMap::new(),
+        }
+    }
+
+    /// Add a custom header.
+    pub fn with_header(mut self, key: String, value: String) -> Self {
+        self.headers.insert(key, value);
+        self
+    }
+}
+
+impl<S> IntoResponse for SubscriptionResponse<S>
+where
+    S: Stream<Item = Result<Update>> + Send + 'static,
+{
+    fn into_response(self) -> Response {
+        let stream = self.stream.map(|result| {
+            match result {
+                Ok(update) => {
+                    protocol::format_update(&update)
+                        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+                }
+                Err(e) => {
+                    // Log error or send error frame if protocol supports it
+                    // For now, just terminate stream with error
+                    Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+                }
+            }
+        });
+
+        let mut builder = Response::builder()
+            .status(StatusCode::from_u16(209).unwrap());
+
+        for (key, value) in self.headers {
+            if let Ok(header_value) = value.parse::<HeaderValue>() {
+                builder = builder.header(key, header_value);
+            }
+        }
+
+        builder
+            .body(Body::from_stream(stream))
+            .unwrap_or_else(|_| Response::default())
     }
 }
 

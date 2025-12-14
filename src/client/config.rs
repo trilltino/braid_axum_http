@@ -97,7 +97,24 @@ pub struct ClientConfig {
     ///
     /// Limits the number of active subscription connections to prevent
     /// resource exhaustion.
+    /// Maximum concurrent subscriptions.
+    ///
+    /// Limits the number of active subscription connections to prevent
+    /// resource exhaustion.
     pub max_subscriptions: usize,
+
+    /// Proxy URL (optional).
+    ///
+    /// If set, requests will be routed through this proxy.
+    pub proxy_url: String,
+
+    /// Request timeout in milliseconds.
+    ///
+    /// Maximum time to wait for a request to complete.
+    pub request_timeout_ms: u64,
+
+    /// Maximum total connections in the pool.
+    pub max_total_connections: u32,
 }
 
 impl Default for ClientConfig {
@@ -108,6 +125,9 @@ impl Default for ClientConfig {
             connection_timeout_secs: 30,
             enable_logging: false,
             max_subscriptions: 100,
+            proxy_url: String::new(),
+            request_timeout_ms: 30000,
+            max_total_connections: 100,
         }
     }
 }
@@ -134,6 +154,9 @@ mod tests {
             connection_timeout_secs: 60,
             enable_logging: true,
             max_subscriptions: 50,
+            proxy_url: "http://proxy".to_string(),
+            request_timeout_ms: 1000,
+            max_total_connections: 50,
         };
         assert_eq!(config.max_retries, 5);
         assert_eq!(config.retry_delay_ms, 2000);

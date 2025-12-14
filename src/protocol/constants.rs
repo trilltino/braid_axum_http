@@ -9,7 +9,7 @@
 //! constants/
 //! ├── Top-level    - Common status codes (STATUS_SUBSCRIPTION, etc.)
 //! ├── status       - All HTTP status codes used by Braid
-//! ├── headers      - All Braid protocol header names
+//! ├── headers      - All Braid protocol header names (typed)
 //! └── merge_types  - Merge type identifiers
 //! ```
 //!
@@ -147,48 +147,54 @@ pub mod status {
 /// Braid protocol header names.
 ///
 /// Use these constants when setting or reading Braid-specific headers.
+/// These are typed `axum::http::HeaderName` constants for zero-copy usage.
 ///
 /// # Example
 ///
 /// ```
 /// use braid_axum_http::protocol::constants::headers;
 ///
-/// assert_eq!(headers::VERSION, "Version");
-/// assert_eq!(headers::SUBSCRIBE, "Subscribe");
+/// assert_eq!(headers::VERSION, "version");
+/// assert_eq!(headers::SUBSCRIBE, "subscribe");
 /// ```
 pub mod headers {
+    use axum::http::HeaderName;
+
     /// Version header - identifies the version of the resource.
-    pub const VERSION: &str = "Version";
+    pub const VERSION: HeaderName = HeaderName::from_static("version");
 
     /// Parents header - identifies parent version(s) in the DAG.
-    pub const PARENTS: &str = "Parents";
+    pub const PARENTS: HeaderName = HeaderName::from_static("parents");
 
     /// Current-Version header - latest version for catch-up signaling.
-    pub const CURRENT_VERSION: &str = "Current-Version";
+    pub const CURRENT_VERSION: HeaderName = HeaderName::from_static("current-version");
 
     /// Subscribe header - requests subscription mode.
-    pub const SUBSCRIBE: &str = "Subscribe";
+    pub const SUBSCRIBE: HeaderName = HeaderName::from_static("subscribe");
 
     /// Heartbeats header - keep-alive interval for subscriptions.
-    pub const HEARTBEATS: &str = "Heartbeats";
+    pub const HEARTBEATS: HeaderName = HeaderName::from_static("heartbeats");
 
     /// Peer header - identifies the client peer.
-    pub const PEER: &str = "Peer";
+    pub const PEER: HeaderName = HeaderName::from_static("peer");
 
     /// Merge-Type header - conflict resolution strategy.
-    pub const MERGE_TYPE: &str = "Merge-Type";
+    pub const MERGE_TYPE: HeaderName = HeaderName::from_static("merge-type");
 
     /// Content-Range header - range specification for patches.
-    pub const CONTENT_RANGE: &str = "Content-Range";
+    pub const CONTENT_RANGE: HeaderName = axum::http::header::CONTENT_RANGE;
 
     /// Patches header - number of patches in multi-patch format.
-    pub const PATCHES: &str = "Patches";
+    pub const PATCHES: HeaderName = HeaderName::from_static("patches");
 
     /// Retry-After header - suggested retry delay.
-    pub const RETRY_AFTER: &str = "Retry-After";
+    pub const RETRY_AFTER: HeaderName = axum::http::header::RETRY_AFTER;
 
     /// Content-Length header - body length.
-    pub const CONTENT_LENGTH: &str = "Content-Length";
+    pub const CONTENT_LENGTH: HeaderName = axum::http::header::CONTENT_LENGTH;
+
+    /// Content-Type header - body media type.
+    pub const CONTENT_TYPE: HeaderName = axum::http::header::CONTENT_TYPE;
 }
 
 // =============================================================================
@@ -235,10 +241,10 @@ mod tests {
 
     #[test]
     fn test_header_names() {
-        assert_eq!(headers::VERSION, "Version");
-        assert_eq!(headers::PARENTS, "Parents");
-        assert_eq!(headers::SUBSCRIBE, "Subscribe");
-        assert_eq!(headers::MERGE_TYPE, "Merge-Type");
+        assert_eq!(headers::VERSION.as_str(), "version");
+        assert_eq!(headers::PARENTS.as_str(), "parents");
+        assert_eq!(headers::SUBSCRIBE.as_str(), "subscribe");
+        assert_eq!(headers::MERGE_TYPE.as_str(), "merge-type");
     }
 
     #[test]

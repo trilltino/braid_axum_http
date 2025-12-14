@@ -141,6 +141,15 @@ pub struct BraidRequest {
     ///
     /// E.g., `"application/json"`, `"text/plain"`.
     pub content_type: Option<String>,
+
+    /// HTTP method (GET, PUT, POST, etc.). Default is "GET".
+    pub method: String,
+
+    /// Request body.
+    pub body: bytes::Bytes,
+
+    /// Extra headers to include in the request.
+    pub extra_headers: std::collections::BTreeMap<String, String>,
 }
 
 impl BraidRequest {
@@ -156,7 +165,12 @@ impl BraidRequest {
     /// ```
     #[inline]
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            method: "GET".to_string(),
+            body: bytes::Bytes::new(),
+            extra_headers: std::collections::BTreeMap::new(),
+            ..Default::default()
+        }
     }
 
     /// Enable subscription mode.
@@ -344,6 +358,24 @@ impl BraidRequest {
     /// ```
     pub fn with_content_type(mut self, content_type: impl Into<String>) -> Self {
         self.content_type = Some(content_type.into());
+        self
+    }
+
+    /// Set HTTP method.
+    pub fn with_method(mut self, method: impl Into<String>) -> Self {
+        self.method = method.into();
+        self
+    }
+
+    /// Set request body.
+    pub fn with_body(mut self, body: impl Into<bytes::Bytes>) -> Self {
+        self.body = body.into();
+        self
+    }
+
+    /// Add a custom header.
+    pub fn with_header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.extra_headers.insert(key.into(), value.into());
         self
     }
 }

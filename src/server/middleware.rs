@@ -26,7 +26,7 @@
 //!
 //! See draft-toomim-httpbis-braid-http sections 2, 3, and 4 for protocol details.
 
-use crate::protocol;
+use crate::protocol::{self, constants::headers};
 use crate::types::Version;
 use axum::{
     middleware::Next,
@@ -108,6 +108,7 @@ impl BraidState {
     ///
     /// Extracts all recognized Braid protocol headers and stores both parsed
     /// values and the raw header map for inspection.
+    #[must_use]
     pub fn from_headers(headers: &axum::http::HeaderMap) -> Self {
         let mut braid_state = BraidState {
             subscribe: false,
@@ -125,29 +126,20 @@ impl BraidState {
                 let name_lower = name.to_string().to_lowercase();
                 braid_state.headers.insert(name_lower.clone(), value_str.to_string());
 
-                match name_lower.as_str() {
-                    "subscribe" => {
-                        braid_state.subscribe = value_str.to_lowercase() == "true";
-                    }
-                    "version" => {
-                        braid_state.version = protocol::parse_version_header(value_str).ok();
-                    }
-                    "parents" => {
-                        braid_state.parents = protocol::parse_version_header(value_str).ok();
-                    }
-                    "peer" => {
-                        braid_state.peer = Some(value_str.to_string());
-                    }
-                    "heartbeats" => {
-                        braid_state.heartbeat = protocol::parse_heartbeat(value_str).ok();
-                    }
-                    "merge-type" => {
-                        braid_state.merge_type = Some(value_str.to_string());
-                    }
-                    "content-range" => {
-                        braid_state.content_range = Some(value_str.to_string());
-                    }
-                    _ => {}
+                if name_lower == headers::SUBSCRIBE.as_str() {
+                    braid_state.subscribe = value_str.to_lowercase() == "true";
+                } else if name_lower == headers::VERSION.as_str() {
+                    braid_state.version = protocol::parse_version_header(value_str).ok();
+                } else if name_lower == headers::PARENTS.as_str() {
+                    braid_state.parents = protocol::parse_version_header(value_str).ok();
+                } else if name_lower == headers::PEER.as_str() {
+                    braid_state.peer = Some(value_str.to_string());
+                } else if name_lower == headers::HEARTBEATS.as_str() {
+                    braid_state.heartbeat = protocol::parse_heartbeat(value_str).ok();
+                } else if name_lower == headers::MERGE_TYPE.as_str() {
+                    braid_state.merge_type = Some(value_str.to_string());
+                } else if name_lower == headers::CONTENT_RANGE.as_str() {
+                    braid_state.content_range = Some(value_str.to_string());
                 }
             }
         }
@@ -241,6 +233,7 @@ impl BraidLayer {
     ///
     /// let layer = BraidLayer::new();
     /// ```
+    #[must_use]
     pub fn new() -> Self {
         Self {
             config: super::config::ServerConfig::default(),
@@ -269,6 +262,7 @@ impl BraidLayer {
     /// };
     /// let layer = BraidLayer::with_config(config);
     /// ```
+    #[must_use]
     pub fn with_config(config: super::config::ServerConfig) -> Self {
         Self {
             config,
@@ -281,6 +275,8 @@ impl BraidLayer {
     /// # Returns
     ///
     /// A reference to the server configuration used by this layer.
+    #[inline]
+    #[must_use]
     pub fn config(&self) -> &super::config::ServerConfig {
         &self.config
     }
@@ -294,6 +290,7 @@ impl BraidLayer {
     /// # Returns
     ///
     /// A middleware function compatible with `Router::layer()`.
+    #[must_use]
     pub fn middleware(
         &self,
     ) -> impl Fn(Request, Next) -> std::pin::Pin<Box<dyn std::future::Future<Output = Response> + Send>>

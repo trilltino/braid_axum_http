@@ -159,6 +159,7 @@ impl Patch {
     /// assert_eq!(patch.unit, "lines");
     /// assert_eq!(patch.range, "10:20");
     /// ```
+    #[must_use]
     pub fn new(
         unit: impl Into<String>,
         range: impl Into<String>,
@@ -199,6 +200,7 @@ impl Patch {
     /// let patch = Patch::json(".config.settings.theme", r#""dark""#);
     /// ```
     #[inline]
+    #[must_use]
     pub fn json(range: impl Into<String>, content: impl Into<Bytes>) -> Self {
         Self::new("json", range, content)
     }
@@ -224,6 +226,7 @@ impl Patch {
     /// let patch = Patch::bytes("0:0", &b"prefix"[..]);
     /// ```
     #[inline]
+    #[must_use]
     pub fn bytes(range: impl Into<String>, content: impl Into<Bytes>) -> Self {
         Self::new("bytes", range, content)
     }
@@ -246,6 +249,7 @@ impl Patch {
     /// assert_eq!(patch.unit, "text");
     /// ```
     #[inline]
+    #[must_use]
     pub fn text(range: impl Into<String>, content: impl Into<String>) -> Self {
         let content_str = content.into();
         Self::new("text", range, Bytes::from(content_str))
@@ -270,6 +274,7 @@ impl Patch {
     /// assert_eq!(patch.unit, "lines");
     /// ```
     #[inline]
+    #[must_use]
     pub fn lines(range: impl Into<String>, content: impl Into<String>) -> Self {
         let content_str = content.into();
         Self::new("lines", range, Bytes::from(content_str))
@@ -295,6 +300,7 @@ impl Patch {
     /// let patch = Patch::with_length("json", ".field", "value", 5);
     /// assert_eq!(patch.content_length, Some(5));
     /// ```
+    #[must_use]
     pub fn with_length(
         unit: impl Into<String>,
         range: impl Into<String>,
@@ -320,6 +326,7 @@ impl Patch {
     /// assert!(!Patch::bytes("0:10", &b"data"[..]).is_json());
     /// ```
     #[inline]
+    #[must_use]
     pub fn is_json(&self) -> bool {
         self.unit == "json"
     }
@@ -335,18 +342,21 @@ impl Patch {
     /// assert!(!Patch::json(".field", "value").is_bytes());
     /// ```
     #[inline]
+    #[must_use]
     pub fn is_bytes(&self) -> bool {
         self.unit == "bytes"
     }
 
     /// Check if this is a text patch.
     #[inline]
+    #[must_use]
     pub fn is_text(&self) -> bool {
         self.unit == "text"
     }
 
     /// Check if this is a lines patch.
     #[inline]
+    #[must_use]
     pub fn is_lines(&self) -> bool {
         self.unit == "lines"
     }
@@ -365,6 +375,8 @@ impl Patch {
     /// let patch = Patch::json(".field", "value");
     /// assert_eq!(patch.content_str(), Some("value"));
     /// ```
+    #[inline]
+    #[must_use]
     pub fn content_str(&self) -> Option<&str> {
         std::str::from_utf8(&self.content).ok()
     }
@@ -380,6 +392,7 @@ impl Patch {
     /// assert_eq!(patch.len(), 5);
     /// ```
     #[inline]
+    #[must_use]
     pub fn len(&self) -> usize {
         self.content_length.unwrap_or_else(|| self.content.len())
     }
@@ -395,6 +408,7 @@ impl Patch {
     /// assert!(patch.is_empty());
     /// ```
     #[inline]
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -411,6 +425,7 @@ impl Patch {
     /// let patch = Patch::json(".users[0]", "{}");
     /// assert_eq!(patch.content_range_header(), "json .users[0]");
     /// ```
+    #[must_use]
     pub fn content_range_header(&self) -> String {
         format!("{} {}", self.unit, self.range)
     }

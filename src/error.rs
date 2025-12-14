@@ -204,6 +204,8 @@ impl BraidError {
     /// assert!(BraidError::Timeout.is_retryable());
     /// assert!(!BraidError::HistoryDropped.is_retryable());
     /// ```
+    #[inline]
+    #[must_use]
     pub fn is_retryable(&self) -> bool {
         match self {
             BraidError::Http(msg) => {
@@ -232,6 +234,8 @@ impl BraidError {
     /// let err = BraidError::Http("401 Unauthorized".into());
     /// assert!(err.is_access_denied());
     /// ```
+    #[inline]
+    #[must_use]
     pub fn is_access_denied(&self) -> bool {
         match self {
             BraidError::Http(msg) => msg.contains("401") || msg.contains("403"),

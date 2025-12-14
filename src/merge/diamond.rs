@@ -115,6 +115,7 @@ impl DiamondCRDT {
     /// let doc = DiamondCRDT::new("550e8400-e29b-41d4-a716-446655440000");
     /// assert!(doc.is_empty());
     /// ```
+    #[must_use]
     pub fn new(agent_id: impl Into<String>) -> Self {
         let agent_id_str = agent_id.into();
         let mut oplog = diamond_types::list::OpLog::new();
@@ -273,6 +274,8 @@ impl DiamondCRDT {
     /// doc.add_insert(0, "hello");
     /// assert_eq!(doc.content(), "hello");
     /// ```
+    #[inline]
+    #[must_use]
     pub fn content(&self) -> String {
         self.branch.content().to_string()
     }
@@ -294,6 +297,8 @@ impl DiamondCRDT {
     /// let doc = DiamondCRDT::new("session-1");
     /// assert_eq!(doc.agent_id(), "session-1");
     /// ```
+    #[inline]
+    #[must_use]
     pub fn agent_id(&self) -> &str {
         &self.agent_id
     }
@@ -318,6 +323,8 @@ impl DiamondCRDT {
     /// doc.add_insert(0, "hi");  // 2 operations
     /// assert_eq!(doc.operation_count(), 2);
     /// ```
+    #[inline]
+    #[must_use]
     pub fn operation_count(&self) -> usize {
         self.oplog.len()
     }
@@ -341,6 +348,8 @@ impl DiamondCRDT {
     /// doc.add_insert(0, "text");
     /// assert!(!doc.is_empty());
     /// ```
+    #[inline]
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.oplog.is_empty()
     }
@@ -370,6 +379,7 @@ impl DiamondCRDT {
     /// let exported = doc.export_operations();
     /// assert_eq!(exported["agent_id"], "session-1");
     /// ```
+    #[must_use]
     pub fn export_operations(&self) -> Value {
         let version = format!(
             "oplog-{}-{}",
@@ -406,6 +416,7 @@ impl DiamondCRDT {
     /// let v2 = doc.get_version();
     /// assert_ne!(v1, v2);
     /// ```
+    #[must_use]
     pub fn get_version(&self) -> String {
         format!("diamond-{}-{}", self.agent_id, self.oplog.len())
     }
@@ -433,6 +444,7 @@ impl DiamondCRDT {
     /// let checkpoint = doc.checkpoint();
     /// assert_eq!(checkpoint["content"], "hello");
     /// ```
+    #[must_use]
     pub fn checkpoint(&self) -> Value {
         json!({
             "content": self.content(),
@@ -465,6 +477,8 @@ impl DiamondCRDT {
     /// let doc = DiamondCRDT::new("session-1");
     /// assert_eq!(doc.merge_quality(), 100);  // No remote edits yet
     /// ```
+    #[inline]
+    #[must_use]
     pub fn merge_quality(&self) -> u32 {
         if self.remote_versions.is_empty() {
             100

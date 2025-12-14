@@ -45,6 +45,7 @@ impl ConflictResolver {
     /// let manager = ResourceStateManager::new();
     /// let resolver = ConflictResolver::new(manager);
     /// ```
+    #[must_use]
     pub fn new(resource_manager: ResourceStateManager) -> Self {
         Self { resource_manager }
     }
@@ -251,6 +252,8 @@ impl ConflictResolver {
     /// # Returns
     ///
     /// Current document text, or `None` if the resource doesn't exist.
+    #[inline]
+    #[must_use]
     pub fn get_resource_content(&self, resource_id: &str) -> Option<String> {
         self.resource_manager
             .get_resource_state(resource_id)
@@ -266,6 +269,8 @@ impl ConflictResolver {
     /// # Returns
     ///
     /// Current version identifier, or `None` if the resource doesn't exist.
+    #[inline]
+    #[must_use]
     pub fn get_resource_version(&self, resource_id: &str) -> Option<Version> {
         self.resource_manager
             .get_resource_state(resource_id)

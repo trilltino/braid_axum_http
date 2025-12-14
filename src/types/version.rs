@@ -152,6 +152,7 @@ impl Version {
     /// let v2 = Version::new(String::from("def456"));
     /// ```
     #[inline]
+    #[must_use]
     pub fn new(s: impl Into<String>) -> Self {
         Version::String(s.into())
     }
@@ -171,6 +172,7 @@ impl Version {
     /// assert_eq!(v, Version::Integer(42));
     /// ```
     #[inline]
+    #[must_use]
     pub fn integer(n: i64) -> Self {
         Version::Integer(n)
     }
@@ -186,6 +188,7 @@ impl Version {
     /// assert!(!Version::Integer(42).is_string());
     /// ```
     #[inline]
+    #[must_use]
     pub fn is_string(&self) -> bool {
         matches!(self, Version::String(_))
     }
@@ -201,6 +204,7 @@ impl Version {
     /// assert!(!Version::new("abc").is_integer());
     /// ```
     #[inline]
+    #[must_use]
     pub fn is_integer(&self) -> bool {
         matches!(self, Version::Integer(_))
     }
@@ -223,6 +227,7 @@ impl Version {
     /// assert_eq!(v.as_str(), None);
     /// ```
     #[inline]
+    #[must_use]
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Version::String(s) => Some(s),
@@ -248,6 +253,7 @@ impl Version {
     /// assert_eq!(v.as_integer(), None);
     /// ```
     #[inline]
+    #[must_use]
     pub fn as_integer(&self) -> Option<i64> {
         match self {
             Version::Integer(i) => Some(*i),
@@ -270,6 +276,7 @@ impl Version {
     /// let v = Version::Integer(42);
     /// assert_eq!(v.to_json(), serde_json::json!(42));
     /// ```
+    #[must_use]
     pub fn to_json(&self) -> serde_json::Value {
         match self {
             Version::String(s) => serde_json::json!(s),
@@ -295,6 +302,7 @@ impl Version {
     /// let v = Version::from_json(json!(42));
     /// assert_eq!(v, Version::Integer(42));
     /// ```
+    #[must_use]
     pub fn from_json(value: serde_json::Value) -> Self {
         match value {
             serde_json::Value::String(s) => Version::String(s),

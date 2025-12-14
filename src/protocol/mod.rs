@@ -91,9 +91,11 @@
 //! [RFC 8941 Structured Headers]: https://datatracker.ietf.org/doc/html/rfc8941
 
 pub mod constants;
+pub mod formatter;
 pub mod headers;
 pub mod parser;
 
 pub use constants::*;
+pub use formatter::*;
 pub use headers::*;
 pub use parser::*;

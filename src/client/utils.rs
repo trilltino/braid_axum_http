@@ -12,8 +12,10 @@
 
 use crate::error::{Result, BraidError};
 use crate::protocol;
+use crate::types::{Update, Version};
 use bytes::{Bytes, BytesMut};
 use std::time::Duration;
+use crate::client::parser::Message;
 
 /// Parse Content-Range header.
 ///
@@ -106,6 +108,54 @@ pub fn merge_bodies(body1: &Bytes, body2: &Bytes) -> Bytes {
     result.extend_from_slice(body1);
     result.extend_from_slice(body2);
     result.freeze()
+}
+
+/// Convert a parsed protocol message to an Update object.
+///
+/// Extracts versioning, headers, and content from the raw message
+/// and constructs a typed `Update` struct.
+pub fn message_to_update(msg: Message) -> Update {
+    let mut builder = if !msg.patches.is_empty() {
+        // Construct patched update
+        // We need a version, fallback to unknown/generated if missing
+        let version = extract_version(&msg.headers).unwrap_or_else(|| Version::new("unknown"));
+        Update::patched(version, msg.patches)
+    } else {
+        // Construct snapshot update
+        let version = extract_version(&msg.headers).unwrap_or_else(|| Version::new("unknown"));
+        let body = String::from_utf8_lossy(&msg.body).to_string();
+        Update::snapshot(version, body)
+    };
+
+    // Add parents
+    if let Some(parents) = extract_parents(&msg.headers) {
+         for parent in parents {
+             builder = builder.with_parent(parent);
+         }
+    }
+
+    // Add metadata
+    if let Some(merge_type) = msg.headers.get("merge-type") {
+        builder = builder.with_merge_type(merge_type.clone());
+    }
+    
+    // Status code is not in Message (it's in the Response wrapper), 
+    // but we can assume 200/209 for normal updates. 
+    // The parser doesn't track status codes of individual chunks in HTTP/1.1 chunks,
+    // but Braid messages within a stream inherit the stream status 209.
+    
+    builder
+}
+
+fn extract_version(headers: &std::collections::BTreeMap<String, String>) -> Option<Version> {
+    headers.get("version")
+           .and_then(|v| protocol::parse_version_header(v).ok())
+           .and_then(|mut v| v.pop())
+}
+
+fn extract_parents(headers: &std::collections::BTreeMap<String, String>) -> Option<Vec<Version>> {
+    headers.get("parents")
+           .and_then(|v| protocol::parse_version_header(v).ok())
 }
 
 #[cfg(test)]

@@ -1,0 +1,62 @@
+﻿cargo :     Checking braid_axum_http v0.1.0 
+(C:\Users\isich\braid_axum_http)
+At line:1 char:1
++ cargo check --lib > check_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking br. 
+   ..raid_axum_http):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `BufMut`
+  --> src\protocol\formatter.rs:10:30
+   |
+10 | use bytes::{Bytes, BytesMut, BufMut};
+   |                              ^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::fmt::Write`
+  --> src\protocol\formatter.rs:11:5
+   |
+11 | use std::fmt::Write;
+   |     ^^^^^^^^^^^^^^^
+
+error[E0107]: type alias takes 1 generic argument but 2 
+generic arguments were supplied
+   --> src\server\send_update.rs:230:22
+    |
+230 |     S: Stream<Item = Result<Update, BraidError>> + Send 
++ 'static,
+    |                      ^^^^^^       ------------ help: 
+remove the unnecessary generic argument
+    |                      |
+    |                      expected 1 generic argument
+    |
+note: type alias defined here, with 1 generic parameter: `T`
+   --> src\error.rs:56:10
+    |
+ 56 | pub type Result<T> = std::result::Result<T, BraidError>;
+    |          ^^^^^^ -
+
+error[E0107]: type alias takes 1 generic argument but 2 
+generic arguments were supplied
+   --> src\server\send_update.rs:249:22
+    |
+249 |     S: Stream<Item = Result<Update, BraidError>> + Send 
++ 'static,
+    |                      ^^^^^^       ------------ help: 
+remove the unnecessary generic argument
+    |                      |
+    |                      expected 1 generic argument
+    |
+note: type alias defined here, with 1 generic parameter: `T`
+   --> src\error.rs:56:10
+    |
+ 56 | pub type Result<T> = std::result::Result<T, BraidError>;
+    |          ^^^^^^ -
+
+For more information about this error, try `rustc --explain 
+E0107`.
+warning: `braid_axum_http` (lib) generated 2 warnings
+error: could not compile `braid_axum_http` (lib) due to 2 
+previous errors; 2 warnings emitted

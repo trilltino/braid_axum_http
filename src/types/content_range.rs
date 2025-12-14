@@ -134,6 +134,7 @@ impl ContentRange {
     /// assert_eq!(range.range, ".users[0].name");
     /// ```
     #[inline]
+    #[must_use]
     pub fn new(unit: impl Into<String>, range: impl Into<String>) -> Self {
         ContentRange {
             unit: unit.into(),
@@ -152,6 +153,7 @@ impl ContentRange {
     /// assert_eq!(range.unit, "json");
     /// ```
     #[inline]
+    #[must_use]
     pub fn json(range: impl Into<String>) -> Self {
         Self::new("json", range)
     }
@@ -167,30 +169,35 @@ impl ContentRange {
     /// assert_eq!(range.unit, "bytes");
     /// ```
     #[inline]
+    #[must_use]
     pub fn bytes(range: impl Into<String>) -> Self {
         Self::new("bytes", range)
     }
 
     /// Create a text content range.
     #[inline]
+    #[must_use]
     pub fn text(range: impl Into<String>) -> Self {
         Self::new("text", range)
     }
 
     /// Create a lines content range.
     #[inline]
+    #[must_use]
     pub fn lines(range: impl Into<String>) -> Self {
         Self::new("lines", range)
     }
 
     /// Check if this is a JSON range.
     #[inline]
+    #[must_use]
     pub fn is_json(&self) -> bool {
         self.unit == "json"
     }
 
     /// Check if this is a bytes range.
     #[inline]
+    #[must_use]
     pub fn is_bytes(&self) -> bool {
         self.unit == "bytes"
     }
@@ -207,6 +214,7 @@ impl ContentRange {
     /// let range = ContentRange::new("json", ".field");
     /// assert_eq!(range.to_header_value(), "json .field");
     /// ```
+    #[must_use]
     pub fn to_header_value(&self) -> String {
         format!("{} {}", self.unit, self.range)
     }

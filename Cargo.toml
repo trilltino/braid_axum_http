@@ -40,6 +40,7 @@ regex = "1.11"
 
 diamond-types = "1.0"
 async-trait = "0.1"
+reqwest = { version = "0.12", features = ["json", "stream"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

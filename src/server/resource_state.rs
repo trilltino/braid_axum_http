@@ -72,6 +72,7 @@ impl ResourceStateManager {
     ///
     /// let manager = ResourceStateManager::new();
     /// ```
+    #[must_use]
     pub fn new() -> Self {
         Self {
             resources: Arc::new(RwLock::new(HashMap::new())),
@@ -102,6 +103,7 @@ impl ResourceStateManager {
     /// let resource = manager.get_or_create_resource("doc1", "session-1");
     /// // Now resource can be accessed and modified
     /// ```
+    #[must_use]
     pub fn get_or_create_resource(
         &self,
         resource_id: &str,
@@ -131,6 +133,8 @@ impl ResourceStateManager {
     /// # Returns
     ///
     /// `Some(Arc<RwLock<ResourceState>>)` if found, `None` otherwise.
+    #[inline]
+    #[must_use]
     pub fn get_resource(&self, resource_id: &str) -> Option<Arc<RwLock<ResourceState>>> {
         let resources = self.resources.read();
         resources.get(resource_id).cloned()
@@ -141,6 +145,7 @@ impl ResourceStateManager {
     /// # Returns
     ///
     /// A vector of resource IDs in arbitrary order.
+    #[must_use]
     pub fn list_resources(&self) -> Vec<String> {
         let resources = self.resources.read();
         resources.keys().cloned().collect()
@@ -254,6 +259,8 @@ impl ResourceStateManager {
     /// # Returns
     ///
     /// `Some(Value)` if the resource exists, `None` otherwise.
+    #[inline]
+    #[must_use]
     pub fn get_resource_state(&self, resource_id: &str) -> Option<Value> {
         self.get_resource(resource_id).map(|resource| {
             let state = resource.read();
@@ -272,6 +279,8 @@ impl ResourceStateManager {
     /// # Returns
     ///
     /// `Some(u32)` if the resource exists, `None` otherwise.
+    #[inline]
+    #[must_use]
     pub fn get_merge_quality(&self, resource_id: &str) -> Option<u32> {
         self.get_resource(resource_id).map(|resource| {
             let state = resource.read();

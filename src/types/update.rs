@@ -215,6 +215,7 @@ impl Update {
     /// assert!(update.is_snapshot());
     /// assert!(!update.is_patched());
     /// ```
+    #[must_use]
     pub fn snapshot(version: Version, body: impl Into<Bytes>) -> Self {
         Update {
             version: vec![version],
@@ -256,6 +257,7 @@ impl Update {
     /// assert!(update.is_patched());
     /// assert!(!update.is_snapshot());
     /// ```
+    #[must_use]
     pub fn patched(version: Version, patches: Vec<Patch>) -> Self {
         Update {
             version: vec![version],
@@ -282,6 +284,7 @@ impl Update {
     /// assert!(update.is_snapshot());
     /// ```
     #[inline]
+    #[must_use]
     pub fn is_snapshot(&self) -> bool {
         self.body.is_some()
     }
@@ -297,6 +300,7 @@ impl Update {
     /// assert!(update.is_patched());
     /// ```
     #[inline]
+    #[must_use]
     pub fn is_patched(&self) -> bool {
         self.patches.is_some()
     }
@@ -314,6 +318,7 @@ impl Update {
     /// assert_eq!(update.primary_version(), Some(&Version::new("v1")));
     /// ```
     #[inline]
+    #[must_use]
     pub fn primary_version(&self) -> Option<&Version> {
         self.version.first()
     }
@@ -323,6 +328,8 @@ impl Update {
     /// # Returns
     ///
     /// `Some(&str)` if the body exists and is valid UTF-8, `None` otherwise.
+    #[inline]
+    #[must_use]
     pub fn body_str(&self) -> Option<&str> {
         self.body.as_ref().and_then(|b| std::str::from_utf8(b).ok())
     }
@@ -342,6 +349,7 @@ impl Update {
     ///
     /// assert_eq!(update.parents.len(), 1);
     /// ```
+    #[must_use]
     pub fn with_parent(mut self, parent: Version) -> Self {
         self.parents.push(parent);
         self
@@ -361,6 +369,7 @@ impl Update {
     ///
     /// assert_eq!(update.parents.len(), 2);
     /// ```
+    #[must_use]
     pub fn with_parents(mut self, parents: Vec<Version>) -> Self {
         self.parents.extend(parents);
         self
@@ -379,6 +388,7 @@ impl Update {
     /// let update = Update::snapshot(Version::new("v1"), "data")
     ///     .with_current_version(Version::new("v5"));
     /// ```
+    #[must_use]
     pub fn with_current_version(mut self, version: Version) -> Self {
         if self.current_version.is_none() {
             self.current_version = Some(Vec::new());
@@ -410,6 +420,7 @@ impl Update {
     ///
     /// assert_eq!(update.merge_type, Some("diamond".to_string()));
     /// ```
+    #[must_use]
     pub fn with_merge_type(mut self, merge_type: impl Into<String>) -> Self {
         self.merge_type = Some(merge_type.into());
         self
@@ -425,6 +436,7 @@ impl Update {
     /// let update = Update::snapshot(Version::new("v1"), "data")
     ///     .with_content_range(ContentRange::json(".field"));
     /// ```
+    #[must_use]
     pub fn with_content_range(mut self, content_range: ContentRange) -> Self {
         self.content_range = Some(content_range);
         self
@@ -440,6 +452,7 @@ impl Update {
     /// let update = Update::snapshot(Version::new("v1"), "{}")
     ///     .with_content_type("application/json");
     /// ```
+    #[must_use]
     pub fn with_content_type(mut self, content_type: impl Into<String>) -> Self {
         self.content_type = Some(content_type.into());
         self
@@ -463,6 +476,7 @@ impl Update {
     /// let update = Update::snapshot(Version::new("v1"), "data")
     ///     .with_status(209);
     /// ```
+    #[must_use]
     pub fn with_status(mut self, status: u16) -> Self {
         self.status = status;
         self
@@ -478,6 +492,7 @@ impl Update {
     /// let update = Update::snapshot(Version::new("v1"), "data")
     ///     .with_header("X-Custom", "value");
     /// ```
+    #[must_use]
     pub fn with_header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         self.extra_headers.insert(name.into(), value.into());
         self
@@ -499,6 +514,7 @@ impl Update {
     /// assert!(json.get("version").is_some());
     /// assert!(json.get("parents").is_some());
     /// ```
+    #[must_use]
     pub fn to_json(&self) -> serde_json::Value {
         let mut obj = serde_json::Map::new();
 

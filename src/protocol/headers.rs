@@ -241,6 +241,39 @@ pub fn parse_heartbeat(value: &str) -> Result<u64> {
         .map_err(|_| BraidError::HeaderParse(format!("Invalid heartbeat: {}", value)))
 }
 
+/// Parse and validate Merge-Type header.
+///
+/// Ensures the merge type is one of the supported values (e.g., "sync9", "diamond").
+///
+/// # Arguments
+///
+/// * `value` - The header value to parse
+///
+/// # Returns
+///
+/// The validated merge type string.
+///
+/// # Errors
+///
+/// Returns an error if the merge type is unknown or invalid.
+///
+/// # Examples
+///
+/// ```
+/// use braid_axum_http::protocol::parse_merge_type;
+///
+/// assert!(parse_merge_type("diamond").is_ok());
+/// assert!(parse_merge_type("invalid").is_err());
+/// ```
+pub fn parse_merge_type(value: &str) -> Result<String> {
+    let trimmed = value.trim();
+    match trimmed {
+        crate::protocol::constants::merge_types::SYNC9 |
+        crate::protocol::constants::merge_types::DIAMOND => Ok(trimmed.to_string()),
+        _ => Err(BraidError::HeaderParse(format!("Unsupported merge-type: {}", value))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,5 +348,12 @@ mod tests {
     #[test]
     fn test_parse_heartbeat_invalid() {
         assert!(parse_heartbeat("abc").is_err());
+    }
+
+    #[test]
+    fn test_parse_merge_type() {
+        assert!(parse_merge_type("diamond").is_ok());
+        assert!(parse_merge_type("sync9").is_ok());
+        assert!(parse_merge_type("unknown").is_err());
     }
 }
