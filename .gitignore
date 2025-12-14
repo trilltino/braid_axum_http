@@ -1,1 +1,19 @@
 /target
+
+# Sensitive files
+.env
+.env.*
+*.pem
+*.key
+*-key
+private-key
+*.secret
+secrets/
+credentials/
+
+# IDE
+.idea/
+.vscode/
+
+# Reference materials (large external repos)
+/reference/axum/target/
